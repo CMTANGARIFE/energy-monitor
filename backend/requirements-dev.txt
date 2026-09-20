@@ -1,0 +1,4 @@
+# Dependencias de desarrollo y pruebas (backend)
+-r requirements.txt
+pytest>=8.0
+pypdf>=4.0

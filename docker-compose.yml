@@ -1,0 +1,74 @@
+# ==============================================================
+# Energy Monitor - Docker Compose
+# Levantar:   docker compose up -d
+# Detener:    docker compose down
+# Los datos de PostgreSQL persisten en el volumen postgres_data
+# y sobreviven a `docker compose down` y recreación de contenedores.
+# ==============================================================
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: energy_monitor_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-energy_monitor}
+      POSTGRES_USER: ${POSTGRES_USER:-energy}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cambia_esta_clave_local}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - energy-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-energy} -d ${POSTGRES_DB:-energy_monitor}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  backend:
+    build: ./backend
+    container_name: energy_monitor_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-energy}:${POSTGRES_PASSWORD:-cambia_esta_clave_local}@postgres:5432/${POSTGRES_DB:-energy_monitor}
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+      ASSETS_DIR: /app/assets
+    volumes:
+      # Assets reemplazables sin reconstruir (logo.png para el PDF)
+      - ./backend/assets:/app/assets
+    networks:
+      - energy-net
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 25s
+
+  frontend:
+    build: ./frontend
+    container_name: energy_monitor_web
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      # Assets reemplazables sin reconstruir (logo, favicon, imagen por defecto)
+      - ./frontend/assets:/usr/share/nginx/html/assets:ro
+    networks:
+      - energy-net
+
+volumes:
+  postgres_data:
+    name: energy_monitor_pgdata
+
+networks:
+  energy-net:
+    driver: bridge

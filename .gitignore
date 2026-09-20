@@ -1,0 +1,28 @@
+# Entorno
+.env
+*.pyc
+__pycache__/
+.venv/
+venv/
+
+# Python / testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/dist-ssr/
+
+# Logs
+*.log
+logs/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Respaldos locales generados
+backups/
+*.sql.gz
