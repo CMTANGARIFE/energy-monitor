@@ -53,7 +53,7 @@ def upgrade() -> None:
         EXCLUDE USING gist (
             daterange(start_date,
                       CASE WHEN end_date IS NULL THEN NULL::date
-                           ELSE end_date + INTERVAL '1 day' END,
+                           ELSE (end_date + INTERVAL '1 day')::date END,
                       '[]')
             WITH &&
         )
